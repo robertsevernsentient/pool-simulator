@@ -197,3 +197,15 @@ def test_state_change_slide_to_roll_detection():
 
     assert Decimal(slide_to_roll_time).quantize(THREE_PLACES) == Decimal(str("20.387"))
 
+# TODO I don't like this. You can be rolling and spinning at the same time
+def test_state_change_spin_to_stop_detection():
+    cue = cue_strike(
+        position=[0.5,0.7],
+        direction=[1, 1],
+        speed=2.0
+    )
+    cue.omega = 10.0  # Set initial spin
+    cue.motion = MotionState.SPINNING
+    spin_to_stop_time = predict_state_transition(cue)
+
+    assert Decimal(spin_to_stop_time).quantize(THREE_PLACES) == Decimal(str("1.250"))
