@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
 import numpy as np
-from src.physics.ball_state import MotionState
-from src.physics.motion_models import time_rolling_to_stop, time_sliding_to_rolling, time_spin_to_stop
-from src.physics.tuneable_constants import G, MU_ROLL, MU_SLIDE, SPIN_FRICTION
+from engine.physics.ball_state import MotionState
+from engine.physics.motion_models import time_rolling_to_stop, time_sliding_to_rolling, time_spin_to_stop
+from engine.physics.tuneable_constants import G, MU_ROLL, MU_SLIDE, SPIN_FRICTION
 
 
 @dataclass(order=True)

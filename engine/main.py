@@ -1,6 +1,6 @@
 # main.py
 
-from pool_simulator.simulator import Simulator
+from engine.physics.simulator import Simulator
 
 def main():
     simulator = Simulator()

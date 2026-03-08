@@ -1,6 +1,6 @@
 import numpy as np
-from src.physics.ball_state import BallState, MotionState
-from src.physics.tuneable_constants import BALL_MASS, BALL_RADIUS
+from engine.physics.ball_state import BallState, MotionState
+from engine.physics.tuneable_constants import BALL_MASS, BALL_RADIUS
 
 def cue_strike(position, direction, speed):
 

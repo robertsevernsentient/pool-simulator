@@ -1,4 +1,4 @@
-from src.physics.table_state import Table
+from engine.physics.table_state import Table
 
 
 G = 9.81

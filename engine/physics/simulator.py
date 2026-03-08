@@ -1,8 +1,8 @@
-from src.physics.ball_state import MotionState
-from src.physics.event_prediction import compute_next_event
-from src.physics.event_resolution import resolve_event
-from src.physics.motion_models import rolling_motion, sliding_motion
-from src.physics.tuneable_constants import G, MU_ROLL, MU_SLIDE
+from engine.physics.ball_state import MotionState
+from engine.physics.event_prediction import compute_next_event
+from engine.physics.event_resolution import resolve_event
+from engine.physics.motion_models import rolling_motion, sliding_motion
+from engine.physics.tuneable_constants import G, MU_ROLL, MU_SLIDE
 
 
 def advance_state(state, dt):

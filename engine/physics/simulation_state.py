@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from src.physics.ball_state import BallState
+from engine.physics.ball_state import BallState
 
 
 @dataclass

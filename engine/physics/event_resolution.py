@@ -1,6 +1,6 @@
-from src.physics.ball_state import MotionState
+from engine.physics.ball_state import MotionState
 import numpy as np
-from src.physics.tuneable_constants import RAIL_RESTITUTION
+from engine.physics.tuneable_constants import RAIL_RESTITUTION
 
 def resolve_ball_collision(a, b):
 
