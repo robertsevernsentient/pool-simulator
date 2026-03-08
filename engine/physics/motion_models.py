@@ -4,7 +4,10 @@ from engine.physics.tuneable_constants import BALL_MASS, BALL_RADIUS
 
 def cue_strike(position, direction, speed):
 
-    direction = direction / np.linalg.norm(direction)
+    if np.linalg.norm(direction) == 0:
+        direction = np.array([0.0, 0.0])  # Default direction if zero vector
+    else:
+        direction = direction / np.linalg.norm(direction)
 
     vel = direction * speed
 

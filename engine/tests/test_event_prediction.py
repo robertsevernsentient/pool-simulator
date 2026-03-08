@@ -1,6 +1,6 @@
 from decimal import Decimal
 from engine.physics.ball_state import MotionState
-from engine.physics.event_prediction import _predict_rail_collision_position, predict_rail_collision
+from engine.physics.event_prediction import _predict_rail_collision_position, predict_rail_collision, predict_state_transition
 from engine.physics.motion_models import cue_strike
 from engine.physics.tuneable_constants import STANDARD_9_FOOT
 
@@ -173,3 +173,27 @@ def test_predict_rail_collision_at_angle():
 
     times = predict_rail_collision(cue, STANDARD_9_FOOT)
     assert Decimal(times).quantize(THREE_PLACES) == Decimal(str("0.336"))
+
+
+# Test state change detection
+def test_state_change_slide_to_roll_detection():
+    cue = cue_strike(
+        position=[0.5,0.7],
+        direction=[1,1],
+        speed=2.0
+    )
+    slide_to_roll_time = predict_state_transition(cue)
+
+    assert Decimal(slide_to_roll_time).quantize(THREE_PLACES) == Decimal(str("0.251"))
+
+def test_state_change_slide_to_roll_detection():
+    cue = cue_strike(
+        position=[0.5,0.7],
+        direction=[1, 1],
+        speed=2.0
+    )
+    cue.motion = MotionState.ROLLING
+    slide_to_roll_time = predict_state_transition(cue)
+
+    assert Decimal(slide_to_roll_time).quantize(THREE_PLACES) == Decimal(str("20.387"))
+
