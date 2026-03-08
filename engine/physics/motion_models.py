@@ -19,17 +19,26 @@ def cue_strike(position, direction, speed):
 
 def sliding_motion(ball, t, mu_slide, g):
 
-    v = ball.vel
-    speed = np.linalg.norm(v)
+    v0 = ball.vel
+    speed = np.linalg.norm(v0)
 
     if speed == 0:
         return ball.pos, ball.vel
 
-    direction = v / speed
+    direction = v0 / speed
+
+    # linear deceleration
     a = -mu_slide * g * direction
 
-    new_pos = ball.pos + v*t + 0.5*a*t*t
-    new_vel = v + a*t
+    new_vel = v0 + a * t
+    new_pos = ball.pos + v0 * t + 0.5 * a * t * t
+
+    # angular acceleration
+    alpha = (5 * mu_slide * g) / (2 * ball.radius)
+
+    new_omega = ball.omega + alpha * t
+
+    ball.omega = new_omega
 
     return new_pos, new_vel
 
@@ -56,13 +65,12 @@ def spinning_motion(ball, t, spin_friction):
 
 def time_sliding_to_rolling(ball, mu_slide, g):
 
-    v = np.linalg.norm(ball.vel)
-    w = abs(ball.omega)
+    v0 = np.linalg.norm(ball.vel)
 
-    if w * ball.radius >= v:
+    if v0 == 0:
         return None
 
-    return (v - w*ball.radius) / (mu_slide * g)
+    return (2 * v0) / (7 * mu_slide * g)
 
 def time_rolling_to_stop(ball, mu_roll, g):
 
