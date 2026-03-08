@@ -28,6 +28,12 @@ def SOFT_CUE_BALL():
         speed=1.0
     )
 
+def ANGLED_CUE_BALL():
+    return cue_strike(
+        position=[0.5,0.7],
+        direction=[1,1],
+        speed=2.0
+    )
 
 def test_initial_state():
     cue = cue_strike(
@@ -121,6 +127,30 @@ def test_state_after_rolling_standard():
 
     assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("1.519")
     assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.700")
+
+    assert vel[0] == 0.0
+    assert vel[1] == 0.0
+
+def test_state_after_rolling_angled():
+    cue = ANGLED_CUE_BALL()
+    time_to_rolling = time_sliding_to_rolling(cue, MU_SLIDE, G)
+    pos, vel = sliding_motion(cue, time_to_rolling, MU_SLIDE, G)
+
+    assert Decimal(str(time_to_rolling)).quantize(THREE_PLACES) == Decimal("0.291")
+    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.853")
+    assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("1.053")
+    assert Decimal(str(vel[0])).quantize(THREE_PLACES) == Decimal("1.010")
+    assert Decimal(str(vel[1])).quantize(THREE_PLACES) == Decimal("1.010")
+
+    cue.pos = pos
+    cue.vel = vel
+    cue.motion = MotionState.ROLLING
+
+    time_to_stop = time_rolling_to_stop(cue, MU_SLIDE, G)
+    pos, vel = rolling_motion(cue, time_to_stop, MU_SLIDE, G)
+
+    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("1.221")
+    assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("1.421")
 
     assert vel[0] == 0.0
     assert vel[1] == 0.0
