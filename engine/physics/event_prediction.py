@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from engine.physics.ball_state import MotionState
-from engine.physics.motion_models import time_rolling_to_stop, time_sliding_to_rolling, time_spin_to_stop
+from engine.physics.motion_models import time_rolling_to_stop, time_sliding_to_rolling, time_spin_to_stop, time_to_reach_point
 from engine.physics.tuneable_constants import G, MU_ROLL, MU_SLIDE, SPIN_FRICTION
 
 
@@ -37,31 +37,49 @@ def predict_ball_ball_collision(a, b):
     return t
 
 def predict_rail_collision(ball, table):
+    pos = _predict_rail_collision_position(ball, table)
+    if pos is None:
+        return None
+    return time_to_reach_point(ball, pos, MU_SLIDE, MU_ROLL, G)
 
-    times = []
+def _predict_rail_collision_position(ball, table):
+
+    collisions = []
 
     vx, vy = ball.vel
     x, y = ball.pos
     r = ball.radius
 
+    # right rail collision
     if vx > 0:
-        times.append((table.width - r - x) / vx)
+        collision_time = (table.width - r - x) / vx
+        collision_position = [table.width - r, y + vy * collision_time]
+        collisions.append((collision_time, collision_position))
 
+    # left rail collision
     if vx < 0:
-        times.append((r - x) / vx)
+        collision_time = (r - x) / vx
+        collision_position = [r, y + vy * collision_time]
+        collisions.append((collision_time, collision_position))
 
+    # top rail collision
     if vy > 0:
-        times.append((table.height - r - y) / vy)
+        collision_time = (table.height - r - y) / vy
+        collision_position = [x + vx * collision_time, table.height - r]
+        collisions.append((collision_time, collision_position))
 
+    # bottom rail collision
     if vy < 0:
-        times.append((r - y) / vy)
+        collision_time = (r - y) / vy
+        collision_position = [x + vx * collision_time, r]
+        collisions.append((collision_time, collision_position))
 
-    times = [t for t in times if t > 1e-6]
+    collisions = [c for c in collisions if c[0] > 1e-6]
 
-    if not times:
+    if not collisions:
         return None
 
-    return min(times)
+    return min(collisions, key=lambda x: x[0])[1]
 
 def predict_state_transition(ball):
 

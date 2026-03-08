@@ -58,6 +58,70 @@ def rolling_motion(ball, t, mu_roll, g):
 
     return pos, vel
 
+def time_to_reach_point(ball, target, mu_slide, mu_roll, g):
+    """
+    Calculate the time for a sliding or rolling ball to reach a given point.
+    Returns None if the ball stops before reaching the point.
+
+    Assumes the ball moves in a straight line toward the target.
+    """
+    pos = np.array(ball.pos, dtype=float)
+    target = np.array(target, dtype=float)
+    vel = np.array(ball.vel, dtype=float)
+
+    if np.allclose(vel, 0):
+        return None  # ball not moving
+
+    # Direction from ball to target
+    direction = target - pos
+    distance = np.linalg.norm(direction)
+    if distance == 0:
+        return 0.0
+
+    direction /= distance  # normalize
+
+    # Velocity component along direction
+    v_along = np.dot(vel, direction)
+    if v_along <= 0:
+        return None  # ball moving away from target
+
+    # Deceleration magnitude
+    if ball.motion == MotionState.SLIDING:
+        a = mu_slide * g
+        t_max = time_sliding_to_rolling(ball, mu_slide, g)
+    elif ball.motion == MotionState.ROLLING:
+        a = mu_roll * g
+        t_max = time_rolling_to_stop(ball, mu_roll, g)
+    else:
+        return None  # stopped or spinning-only
+
+    # Solve 0.5 * a * t^2 - v0 * t + s = 0
+    # Quadratic: 0.5 * a * t^2 - v_along * t + distance = 0
+    A = 0.5 * a
+    B = -v_along
+    C = distance
+
+    discriminant = B**2 - 4*A*C
+    if discriminant < 0:
+        return None  # never reaches target
+
+    sqrt_disc = np.sqrt(discriminant)
+    t1 = (-B + sqrt_disc) / (2*A)
+    t2 = (-B - sqrt_disc) / (2*A)
+
+    # Pick the positive root
+    t_candidates = [t for t in [t1, t2] if t >= 0]
+    if not t_candidates:
+        return None
+
+    t = min(t_candidates)
+
+    # Check if ball stops sliding/rolling before reaching
+    if t > t_max:
+        return None
+
+    return t
+
 def spinning_motion(ball, t, spin_friction):
 
     omega = ball.omega * np.exp(-spin_friction * t)

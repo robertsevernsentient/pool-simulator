@@ -2,7 +2,7 @@ from decimal import Decimal
 from engine.physics.ball_state import BallState, MotionState
 from engine.physics.motion_models import cue_strike, rolling_motion, sliding_motion, spinning_motion, time_rolling_to_stop, time_sliding_to_rolling, time_spin_to_stop
 from engine.physics.simulation_state import SimulationState
-from engine.physics.tuneable_constants import BALL_MASS, BALL_RADIUS, G, MU_SLIDE, SPIN_FRICTION, STANDARD_9_FOOT
+from engine.physics.tuneable_constants import G, MU_SLIDE, SPIN_FRICTION
 import numpy as np
 
 THREE_PLACES = Decimal('0.000')
