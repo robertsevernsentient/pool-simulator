@@ -1,5 +1,5 @@
 from decimal import Decimal
-from engine.physics.ball_state import MotionState
+from engine.physics.ball_state import BallState, MotionState
 from engine.physics.event_prediction import _predict_rail_collision_position, predict_rail_collision, predict_state_transition
 from engine.physics.motion_models import cue_strike
 from engine.physics.tuneable_constants import STANDARD_9_FOOT
@@ -209,3 +209,29 @@ def test_state_change_spin_to_stop_detection():
     spin_to_stop_time = predict_state_transition(cue)
 
     assert Decimal(spin_to_stop_time).quantize(THREE_PLACES) == Decimal(str("1.250"))
+
+def test_state_change_spin_to_stop_detection_zero_omega():
+    cue = cue_strike(
+        position=[0.5,0.7],
+        direction=[1, 1],
+        speed=2.0
+    )
+    cue.omega = 0.0  # Set zero spin
+    cue.motion = MotionState.SPINNING
+    spin_to_stop_time = predict_state_transition(cue)
+
+    assert spin_to_stop_time is None
+
+def test_state_change_when_stopped_detection():
+    cue = BallState(
+        pos=[0.5,0.7],
+        vel=[0, 0],
+        omega=0.0,
+        motion=MotionState.STOPPED,
+        radius=1,
+        mass=1.0
+    )
+
+    time = predict_state_transition(cue)
+
+    assert time is None
