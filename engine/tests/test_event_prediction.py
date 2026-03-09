@@ -1,8 +1,9 @@
 from decimal import Decimal
+import numpy as np
 from engine.physics.ball_state import BallState, MotionState
-from engine.physics.event_prediction import _predict_rail_collision_position, predict_rail_collision, predict_state_transition
-from engine.physics.motion_models import cue_strike
-from engine.physics.tuneable_constants import STANDARD_9_FOOT
+from engine.physics.event_prediction import _predict_rail_collision_position, predict_ball_ball_collision, predict_rail_collision, predict_state_transition
+from engine.physics.motion_models import cue_strike, sliding_motion
+from engine.physics.tuneable_constants import G, STANDARD_9_FOOT, BALL_RADIUS
 
 THREE_PLACES = Decimal('0.000')
 
@@ -233,3 +234,60 @@ def test_state_change_when_stopped_detection():
     time = predict_state_transition(cue)
 
     assert time is None
+
+
+# ── predict_ball_ball_collision: base cases ──
+
+def test_ball_ball_collision_moving_hits_stationary():
+    # Ball A sliding fast toward stationary ball B
+    # A at [0,0] vel=[5,0] SLIDING, B at [0.2,0] STOPPED
+    # A decelerates: a = -0.20*9.81 = -1.962, p_a(t) = 5t - 0.981t²
+    # B stationary: p_b = 0.2
+    # Collision when 0.2 - (5t - 0.981t²) = 2r = 0.05715
+    # → 0.981t² - 5t + 0.14285 = 0
+    # → t = (5 - √(25 - 0.5604)) / 1.962 = (5 - 4.9437) / 1.962 ≈ 0.029
+    a = BallState(pos=[0.0, 0.0], vel=[5.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    b = BallState(pos=[0.2, 0.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    t = predict_ball_ball_collision(a, b, G)
+    assert t is not None
+    assert Decimal(str(t)).quantize(THREE_PLACES) == Decimal("0.029")
+
+
+def test_ball_ball_collision_moving_away_no_collision():
+    # Ball A moving left, away from ball B on the right
+    a = BallState(pos=[0.5, 0.0], vel=[-2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    b = BallState(pos=[1.0, 0.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    t = predict_ball_ball_collision(a, b, G)
+    assert t is None
+
+
+# ── predict_ball_ball_collision: edge cases ──
+
+def test_ball_ball_collision_both_stopped():
+    a = BallState(pos=[0.0, 0.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    b = BallState(pos=[1.0, 0.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    t = predict_ball_ball_collision(a, b, G)
+    assert t is None
+
+
+def test_ball_ball_collision_parallel_same_speed():
+    a = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    b = BallState(pos=[0.0, 0.2], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    t = predict_ball_ball_collision(a, b, G)
+    assert t is None
+
+
+# ── predict_ball_ball_collision: self-consistency ──
+
+def test_ball_ball_collision_distance_equals_2r_at_collision():
+    a = BallState(pos=[0.0, 0.0], vel=[5.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    b = BallState(pos=[0.2, 0.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    t = predict_ball_ball_collision(a, b, G)
+    assert t is not None
+
+    # Advance ball A by t (B is stationary, stays at [0.2, 0])
+    pos_a, _ = sliding_motion(a, t, G)
+    pos_b = b.pos
+
+    dist = np.linalg.norm(pos_a - pos_b)
+    assert Decimal(str(dist)).quantize(THREE_PLACES) == Decimal(str(2 * BALL_RADIUS)).quantize(THREE_PLACES)

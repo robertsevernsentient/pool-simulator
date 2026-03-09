@@ -2,6 +2,16 @@ import numpy as np
 from engine.physics.ball_state import BallState, MotionState
 from engine.physics.tuneable_constants import BALL_MASS, BALL_RADIUS
 
+def ball_acceleration(ball, g):
+    if ball.motion in (MotionState.STOPPED, MotionState.SPINNING):
+        return np.array([0.0, 0.0])
+    speed = np.linalg.norm(ball.vel)
+    if speed == 0:
+        return np.array([0.0, 0.0])
+    direction = ball.vel / speed
+    return -ball.mu() * g * direction
+
+
 def cue_strike(position, direction, speed):
 
     direction = np.array(direction, dtype=float)

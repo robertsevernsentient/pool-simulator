@@ -151,6 +151,62 @@ def test_state_after_sliding():
     assert Decimal(str(vel[1])).quantize(THREE_PLACES) == Decimal("0.000")
 
 
+# ── sliding_motion: base cases ──
+
+def test_sliding_motion_x_axis():
+    # ball at [0,0], vel=[2,0], t=0.1
+    # a = -mu_slide * g = -0.20 * 9.81 = -1.962
+    # vel = 2.0 + (-1.962)(0.1) = 1.804
+    # pos = 0 + 2.0(0.1) + 0.5(-1.962)(0.01) = 0.200 - 0.010 = 0.190
+    cue = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    pos, vel = sliding_motion(cue, 0.1, G)
+    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.190")
+    assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.000")
+    assert Decimal(str(vel[0])).quantize(THREE_PLACES) == Decimal("1.804")
+    assert Decimal(str(vel[1])).quantize(THREE_PLACES) == Decimal("0.000")
+
+def test_sliding_motion_angled():
+    # ball at [0,0], vel=[1,1] (speed √2), t=0.1
+    # direction = [1/√2, 1/√2], a = -1.962 * [1/√2, 1/√2] = [-1.387, -1.387]
+    # vel = [1 - 0.139, 1 - 0.139] = [0.861, 0.861]
+    # pos = [0.1 - 0.007, 0.1 - 0.007] = [0.093, 0.093]
+    cue = BallState(pos=[0.0, 0.0], vel=[1.0, 1.0], omega=0.0, motion=MotionState.SLIDING)
+    pos, vel = sliding_motion(cue, 0.1, G)
+    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.093")
+    assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.093")
+    assert Decimal(str(vel[0])).quantize(THREE_PLACES) == Decimal("0.861")
+    assert Decimal(str(vel[1])).quantize(THREE_PLACES) == Decimal("0.861")
+
+
+# ── sliding_motion: edge cases ──
+
+def test_sliding_motion_zero_velocity_returns_unchanged():
+    cue = BallState(pos=[1.0, 2.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    pos, vel = sliding_motion(cue, 0.5, G)
+    assert pos[0] == 1.0
+    assert pos[1] == 2.0
+    assert vel[0] == 0.0
+    assert vel[1] == 0.0
+
+def test_sliding_motion_t_zero():
+    cue = BallState(pos=[1.0, 2.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    pos, vel = sliding_motion(cue, 0.0, G)
+    assert pos[0] == 1.0
+    assert pos[1] == 2.0
+    assert vel[0] == 2.0
+    assert vel[1] == 0.0
+
+
+# ── sliding_motion: self-consistency ──
+
+def test_sliding_motion_decelerates_monotonically():
+    cue = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    _, vel1 = sliding_motion(cue, 0.1, G)
+    cue2 = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    _, vel2 = sliding_motion(cue2, 0.2, G)
+    assert np.linalg.norm(vel1) > np.linalg.norm(vel2)
+
+
 ###### ROLLING TO STOP
 def test_rolling_to_stop_time_standard():
     cue = DEFAULT_CUE_BALL()
@@ -254,6 +310,40 @@ def test_state_after_rolling_angled():
     assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("8.408")
 
     assert vel[0] == 0.0
+    assert vel[1] == 0.0
+
+
+# ── rolling_motion: base cases ──
+
+def test_rolling_motion_x_axis():
+    # ball at [0,0], vel=[2,0], t=0.5
+    # a = -mu_roll * g = -0.01 * 9.81 = -0.0981
+    # vel = 2.0 - 0.0981*0.5 = 1.951
+    # pos = 0 + 2.0*0.5 + 0.5*(-0.0981)*0.25 = 1.000 - 0.012 = 0.988
+    cue = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
+    pos, vel = rolling_motion(cue, 0.5, G)
+    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.988")
+    assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.000")
+    assert Decimal(str(vel[0])).quantize(THREE_PLACES) == Decimal("1.951")
+    assert Decimal(str(vel[1])).quantize(THREE_PLACES) == Decimal("0.000")
+
+
+# ── rolling_motion: edge cases ──
+
+def test_rolling_motion_zero_velocity_returns_unchanged():
+    cue = BallState(pos=[1.0, 2.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
+    pos, vel = rolling_motion(cue, 0.5, G)
+    assert pos[0] == 1.0
+    assert pos[1] == 2.0
+    assert vel[0] == 0.0
+    assert vel[1] == 0.0
+
+def test_rolling_motion_t_zero():
+    cue = BallState(pos=[1.0, 2.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
+    pos, vel = rolling_motion(cue, 0.0, G)
+    assert pos[0] == 1.0
+    assert pos[1] == 2.0
+    assert vel[0] == 2.0
     assert vel[1] == 0.0
 
 

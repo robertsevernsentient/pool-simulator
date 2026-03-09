@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from engine.physics.ball_state import MotionState
-from engine.physics.motion_models import time_rolling_to_stop, time_sliding_to_rolling, time_spin_to_stop, time_to_reach_point
+from engine.physics.motion_models import ball_acceleration, time_rolling_to_stop, time_sliding_to_rolling, time_spin_to_stop, time_to_reach_point
 from engine.physics.tuneable_constants import G
 
 
@@ -13,28 +13,49 @@ class Event:
     a: int
     b: int | None
 
-def predict_ball_ball_collision(a, b):
+def predict_ball_ball_collision(a, b, g):
 
     dp = a.pos - b.pos
     dv = a.vel - b.vel
+    da = ball_acceleration(a, g) - ball_acceleration(b, g)
 
     r = a.radius + b.radius
 
-    A = np.dot(dv, dv)
-    B = 2 * np.dot(dp, dv)
-    C = np.dot(dp, dp) - r*r
+    # Δp(t) = dp + dv·t + ½·da·t²
+    # |Δp(t)|² = (2r)²  →  quartic in t
+    half_da = 0.5 * da
 
-    disc = B*B - 4*A*C
+    c4 = np.dot(half_da, half_da)
+    c3 = 2 * np.dot(dv, half_da)
+    c2 = np.dot(dv, dv) + 2 * np.dot(dp, half_da)
+    c1 = 2 * np.dot(dp, dv)
+    c0 = np.dot(dp, dp) - r * r
 
-    if disc < 0 or A == 0:
+    coeffs = [c4, c3, c2, c1, c0]
+
+    # Strip leading zeros to avoid degenerate polynomial
+    while len(coeffs) > 1 and coeffs[0] == 0:
+        coeffs.pop(0)
+
+    if len(coeffs) <= 1:
         return None
 
-    t = (-B - np.sqrt(disc)) / (2*A)
+    # Cap at the earliest state transition for either ball
+    t_max = float('inf')
+    for ball in [a, b]:
+        t_trans = predict_state_transition(ball)
+        if t_trans is not None and t_trans < t_max:
+            t_max = t_trans
 
-    if t <= 1e-6:
+    roots = np.roots(coeffs)
+
+    # Filter: real, positive, beyond epsilon, within current motion regime
+    real_roots = [r.real for r in roots if abs(r.imag) < 1e-8 and r.real > 1e-6 and r.real <= t_max]
+
+    if not real_roots:
         return None
 
-    return t
+    return min(real_roots)
 
 def predict_rail_collision(ball, table):
     pos = _predict_rail_collision_position(ball, table)
@@ -102,7 +123,7 @@ def compute_next_event(state, table):
     # ball-ball collisions
     for i in range(len(state.balls)):
         for j in range(i+1, len(state.balls)):
-            t = predict_ball_ball_collision(state.balls[i], state.balls[j])
+            t = predict_ball_ball_collision(state.balls[i], state.balls[j], G)
 
             if t and (earliest is None or t < earliest.time):
                 earliest = Event(state.time + t, "BALL_COLLISION", i, j)
