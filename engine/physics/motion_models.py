@@ -4,11 +4,20 @@ from engine.physics.tuneable_constants import BALL_MASS, BALL_RADIUS
 
 def cue_strike(position, direction, speed):
 
-    if np.linalg.norm(direction) == 0:
-        direction = np.array([0.0, 0.0])  # Default direction if zero vector
-    else:
-        direction = direction / np.linalg.norm(direction)
+    direction = np.array(direction, dtype=float)
 
+    if speed == 0.0:
+        return BallState(
+            pos=np.array(position, dtype=float),
+            vel=np.array([0.0, 0.0]),
+            omega=0.0,
+            motion=MotionState.STOPPED
+        )
+
+    if np.linalg.norm(direction) == 0:
+        raise ValueError("direction must be non-zero when speed is non-zero")
+
+    direction = direction / np.linalg.norm(direction)
     vel = direction * speed
 
     return BallState(
@@ -133,13 +142,17 @@ def time_sliding_to_rolling(ball, g):
     v0 = np.linalg.norm(ball.vel)
 
     if v0 == 0:
-        return None
+        raise ValueError("ball is sliding with zero velocity")
 
     return (2 * v0) / (7 * ball.mu() * g)
 
 def time_rolling_to_stop(ball, g):
 
     speed = np.linalg.norm(ball.vel)
+
+    if speed == 0:
+        raise ValueError("ball is rolling with zero velocity")
+
     return speed / (ball.mu() * g)
 
 def time_spin_to_stop(ball):
