@@ -21,6 +21,5 @@ BALL_MASS = 0.17
 STANDARD_9_FOOT = Table(
     width = 2.84,
     height = 1.42,
-    rail_restitution = RAIL_RESTITUTION,
-    cloth_friction = MU_SLIDE
+    rail_restitution = RAIL_RESTITUTION
 )

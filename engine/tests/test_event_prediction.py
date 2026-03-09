@@ -227,9 +227,7 @@ def test_state_change_when_stopped_detection():
         pos=[0.5,0.7],
         vel=[0, 0],
         omega=0.0,
-        motion=MotionState.STOPPED,
-        radius=1,
-        mass=1.0
+        motion=MotionState.STOPPED
     )
 
     time = predict_state_transition(cue)

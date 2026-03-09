@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 from engine.physics.ball_state import MotionState
 from engine.physics.motion_models import time_rolling_to_stop, time_sliding_to_rolling, time_spin_to_stop, time_to_reach_point
-from engine.physics.tuneable_constants import G, MU_ROLL, MU_SLIDE, SPIN_FRICTION
+from engine.physics.tuneable_constants import G
 
 
 @dataclass(order=True)
@@ -40,7 +40,7 @@ def predict_rail_collision(ball, table):
     pos = _predict_rail_collision_position(ball, table)
     if pos is None:
         return None
-    return time_to_reach_point(ball, pos, MU_SLIDE, MU_ROLL, G)
+    return time_to_reach_point(ball, pos, G)
 
 def _predict_rail_collision_position(ball, table):
 
@@ -84,13 +84,13 @@ def _predict_rail_collision_position(ball, table):
 def predict_state_transition(ball):
 
     if ball.motion == MotionState.SLIDING:
-        return time_sliding_to_rolling(ball, MU_SLIDE, G)
+        return time_sliding_to_rolling(ball, G)
 
     if ball.motion == MotionState.ROLLING:
-        return time_rolling_to_stop(ball, MU_ROLL, G)
+        return time_rolling_to_stop(ball, G)
 
     if ball.motion == MotionState.SPINNING:
-        return time_spin_to_stop(ball, SPIN_FRICTION)
+        return time_spin_to_stop(ball)
 
     return None
 

@@ -15,12 +15,10 @@ def cue_strike(position, direction, speed):
         pos=np.array(position, dtype=float),
         vel=vel,
         omega=0.0,
-        motion=MotionState.SLIDING,
-        radius=BALL_RADIUS,
-        mass=BALL_MASS
+        motion=MotionState.SLIDING
     )
 
-def sliding_motion(ball, t, mu_slide, g):
+def sliding_motion(ball, t, g):
 
     v0 = ball.vel
     speed = np.linalg.norm(v0)
@@ -31,13 +29,13 @@ def sliding_motion(ball, t, mu_slide, g):
     direction = v0 / speed
 
     # linear deceleration
-    a = -mu_slide * g * direction
+    a = -ball.mu() * g * direction
 
     new_vel = v0 + a * t
     new_pos = ball.pos + v0 * t + 0.5 * a * t * t
 
     # angular acceleration
-    alpha = (5 * mu_slide * g) / (2 * ball.radius)
+    alpha = (5 * ball.mu() * g) / (2 * ball.radius)
 
     new_omega = ball.omega + alpha * t
 
@@ -45,7 +43,7 @@ def sliding_motion(ball, t, mu_slide, g):
 
     return new_pos, new_vel
 
-def rolling_motion(ball, t, mu_roll, g):
+def rolling_motion(ball, t, g):
 
     v = ball.vel
     speed = np.linalg.norm(v)
@@ -54,14 +52,14 @@ def rolling_motion(ball, t, mu_roll, g):
         return ball.pos, ball.vel
 
     direction = v / speed
-    a = -mu_roll * g * direction
+    a = -ball.mu() * g * direction
 
     pos = ball.pos + v*t + 0.5*a*t*t
     vel = v + a*t
 
     return pos, vel
 
-def time_to_reach_point(ball, target, mu_slide, mu_roll, g):
+def time_to_reach_point(ball, target, g):
     """
     Calculate the time for a sliding or rolling ball to reach a given point.
     Returns None if the ball stops before reaching the point.
@@ -90,11 +88,11 @@ def time_to_reach_point(ball, target, mu_slide, mu_roll, g):
 
     # Deceleration magnitude
     if ball.motion == MotionState.SLIDING:
-        a = mu_slide * g
-        t_max = time_sliding_to_rolling(ball, mu_slide, g)
+        a = ball.mu() * g
+        t_max = time_sliding_to_rolling(ball, g)
     elif ball.motion == MotionState.ROLLING:
-        a = mu_roll * g
-        t_max = time_rolling_to_stop(ball, mu_roll, g)
+        a = ball.mu() * g
+        t_max = time_rolling_to_stop(ball, g)
     else:
         return None  # stopped or spinning-only
 
@@ -130,23 +128,23 @@ def spinning_motion(ball, t, spin_friction):
     omega = ball.omega * np.exp(-spin_friction * t)
     return ball.pos, omega
 
-def time_sliding_to_rolling(ball, mu_slide, g):
+def time_sliding_to_rolling(ball, g):
 
     v0 = np.linalg.norm(ball.vel)
 
     if v0 == 0:
         return None
 
-    return (2 * v0) / (7 * mu_slide * g)
+    return (2 * v0) / (7 * ball.mu() * g)
 
-def time_rolling_to_stop(ball, mu_roll, g):
+def time_rolling_to_stop(ball, g):
 
     speed = np.linalg.norm(ball.vel)
-    return speed / (mu_roll * g)
+    return speed / (ball.mu() * g)
 
-def time_spin_to_stop(ball, spin_friction):
+def time_spin_to_stop(ball):
 
     if ball.omega == 0:
         return None
 
-    return abs(ball.omega) / spin_friction
+    return abs(ball.omega) / ball.mu()
