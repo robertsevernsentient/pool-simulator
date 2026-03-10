@@ -33,6 +33,41 @@ def test_resolve_ball_collision_moving_hits_stationary():
     assert Decimal(str(b.vel[0])).quantize(THREE_PLACES) == Decimal("3.000")
     assert Decimal(str(b.vel[1])).quantize(THREE_PLACES) == Decimal("0.000")
 
+def test_resolve_ball_collision_topspin_re_accelerates_cue_ball():
+    # Head-on collision, A has forward spin (omega > 0).
+    # After collision A.vel = [0,0] but omega is preserved and motion is SLIDING.
+    # Since slip = v - Rω = 0 - Rω < 0 (topspin), friction will accelerate A forward.
+    omega_initial = 50.0  # forward spin
+    a = BallState(pos=[0.0, 0.0], vel=[3.0, 0.0], omega=omega_initial, motion=MotionState.SLIDING)
+    b = BallState(pos=[0.05715, 0.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    resolve_ball_collision(a, b)
+    # A's velocity is zero after collision (equal mass, head-on)
+    assert Decimal(str(a.vel[0])).quantize(THREE_PLACES) == Decimal("0.000")
+    # But omega is preserved — collision doesn't affect spin
+    assert a.omega == omega_initial
+    # And A is set to SLIDING, so friction will act on the slip (v=0, Rω>0 → topspin re-acceleration)
+    assert a.motion == MotionState.SLIDING
+
+def test_resolve_ball_collision_stun_shot_follows_tangent_line():
+    # A perfect stun shot (omega=0) at an angle: cue ball deflects along the tangent.
+    # 45° cut: A at origin vel=[3,0], B at [r√2, r√2] (touching, 45° angle).
+    # Collision normal n = [-1/√2, -1/√2].
+    # After collision, A retains only the tangential component:
+    #   A.vel_after = [3,0] - (3/√2)*[-1/√2,-1/√2] inverted = [1.5, -1.5]
+    # This is perpendicular to n: dot([1.5,-1.5], [-1/√2,-1/√2]) = 0
+    r = BALL_RADIUS
+    s2 = np.sqrt(2)
+    a = BallState(pos=[0.0, 0.0], vel=[3.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    b = BallState(pos=[r * s2, r * s2], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    resolve_ball_collision(a, b)
+    # A follows the tangent: velocity is perpendicular to the collision normal
+    n = a.pos - b.pos
+    n = n / np.linalg.norm(n)
+    assert abs(np.dot(a.vel, n)) < 1e-10
+    # Verify actual values: A.vel_after = [1.5, -1.5]
+    assert Decimal(str(a.vel[0])).quantize(THREE_PLACES) == Decimal("1.500")
+    assert Decimal(str(a.vel[1])).quantize(THREE_PLACES) == Decimal("-1.500")
+
 
 # ── resolve_ball_collision: edge cases ──
 
