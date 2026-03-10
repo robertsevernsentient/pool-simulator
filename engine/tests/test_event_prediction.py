@@ -198,31 +198,6 @@ def test_state_change_slide_to_roll_detection():
 
     assert Decimal(slide_to_roll_time).quantize(THREE_PLACES) == Decimal(str("20.387"))
 
-# TODO I don't like this. You can be rolling and spinning at the same time
-def test_state_change_spin_to_stop_detection():
-    cue = cue_strike(
-        position=[0.5,0.7],
-        direction=[1, 1],
-        speed=2.0
-    )
-    cue.omega = 10.0  # Set initial spin
-    cue.motion = MotionState.SPINNING
-    spin_to_stop_time = predict_state_transition(cue)
-
-    assert Decimal(spin_to_stop_time).quantize(THREE_PLACES) == Decimal(str("1.250"))
-
-def test_state_change_spin_to_stop_detection_zero_omega():
-    cue = cue_strike(
-        position=[0.5,0.7],
-        direction=[1, 1],
-        speed=2.0
-    )
-    cue.omega = 0.0  # Set zero spin
-    cue.motion = MotionState.SPINNING
-    spin_to_stop_time = predict_state_transition(cue)
-
-    assert spin_to_stop_time is None
-
 def test_state_change_when_stopped_detection():
     cue = BallState(
         pos=[0.5,0.7],
@@ -286,7 +261,7 @@ def test_ball_ball_collision_distance_equals_2r_at_collision():
     assert t is not None
 
     # Advance ball A by t (B is stationary, stays at [0.2, 0])
-    pos_a, _ = sliding_motion(a, t, G)
+    pos_a, _, _ = sliding_motion(a, t, G)
     pos_b = b.pos
 
     dist = np.linalg.norm(pos_a - pos_b)

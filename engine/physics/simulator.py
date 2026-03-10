@@ -11,7 +11,7 @@ def advance_state(state, dt):
 
         if ball.motion == MotionState.SLIDING:
 
-            ball.pos, ball.vel = sliding_motion(ball, dt, G)
+            ball.pos, ball.vel, ball.omega = sliding_motion(ball, dt, G)
 
         elif ball.motion == MotionState.ROLLING:
 

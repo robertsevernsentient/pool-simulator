@@ -1,15 +1,17 @@
 import numpy as np
 from engine.physics.ball_state import BallState, MotionState
-from engine.physics.tuneable_constants import BALL_MASS, BALL_RADIUS
+from engine.physics.tuneable_constants import BALL_MASS
 
 def ball_acceleration(ball, g):
-    if ball.motion in (MotionState.STOPPED, MotionState.SPINNING):
+    if ball.motion == MotionState.STOPPED:
         return np.array([0.0, 0.0])
     speed = np.linalg.norm(ball.vel)
     if speed == 0:
         return np.array([0.0, 0.0])
     direction = ball.vel / speed
-    return -ball.mu() * g * direction
+    slip = speed - ball.radius * ball.omega
+    s = 1.0 if slip >= 0 else -1.0
+    return -s * ball.mu() * g * direction
 
 
 def cue_strike(position, direction, speed):
@@ -43,24 +45,27 @@ def sliding_motion(ball, t, g):
     speed = np.linalg.norm(v0)
 
     if speed == 0:
-        return ball.pos, ball.vel
+        return ball.pos, ball.vel, ball.omega
 
     direction = v0 / speed
 
-    # linear deceleration
-    a = -ball.mu() * g * direction
+    # Slip at contact point: v_slip = v - Rω
+    # Friction opposes slip, so its sign depends on slip direction
+    slip = speed - ball.radius * ball.omega
+    s = 1.0 if slip >= 0 else -1.0
+
+    # Linear: friction opposes slip (decelerates for backspin/stun, accelerates for topspin)
+    a = -s * ball.mu() * g * direction
 
     new_vel = v0 + a * t
     new_pos = ball.pos + v0 * t + 0.5 * a * t * t
 
-    # angular acceleration
-    alpha = (5 * ball.mu() * g) / (2 * ball.radius)
+    # Angular: friction reduces slip
+    alpha = s * (5 * ball.mu() * g) / (2 * ball.radius)
 
     new_omega = ball.omega + alpha * t
 
-    ball.omega = new_omega
-
-    return new_pos, new_vel
+    return new_pos, new_vel, new_omega
 
 def rolling_motion(ball, t, g):
 
@@ -113,7 +118,7 @@ def time_to_reach_point(ball, target, g):
         a = ball.mu() * g
         t_max = time_rolling_to_stop(ball, g)
     else:
-        return None  # stopped or spinning-only
+        return None  # stopped
 
     # Solve 0.5 * a * t^2 - v0 * t + s = 0
     # Quadratic: 0.5 * a * t^2 - v_along * t + distance = 0
@@ -142,11 +147,6 @@ def time_to_reach_point(ball, target, g):
 
     return t
 
-def spinning_motion(ball, t, spin_friction):
-
-    omega = ball.omega * np.exp(-spin_friction * t)
-    return ball.pos, omega
-
 def time_sliding_to_rolling(ball, g):
 
     v0 = np.linalg.norm(ball.vel)
@@ -154,7 +154,9 @@ def time_sliding_to_rolling(ball, g):
     if v0 == 0:
         raise ValueError("ball is sliding with zero velocity")
 
-    return (2 * v0) / (7 * ball.mu() * g)
+    # Generalized: accounts for initial omega (backspin/topspin)
+    slip = abs(v0 - ball.radius * ball.omega)
+    return (2 * slip) / (7 * ball.mu() * g)
 
 def time_rolling_to_stop(ball, g):
 
@@ -165,9 +167,3 @@ def time_rolling_to_stop(ball, g):
 
     return speed / (ball.mu() * g)
 
-def time_spin_to_stop(ball):
-
-    if ball.omega == 0:
-        return None
-
-    return abs(ball.omega) / ball.mu()

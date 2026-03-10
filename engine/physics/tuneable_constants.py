@@ -9,9 +9,6 @@ MU_SLIDE = 0.20
 # rolling resistance
 MU_ROLL = 0.01
 
-# spin decay
-SPIN_FRICTION = 8.0
-
 # rail restitution
 RAIL_RESTITUTION = 0.9
 

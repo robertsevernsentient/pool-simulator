@@ -1,8 +1,8 @@
 from decimal import Decimal
 from engine.physics.ball_state import BallState, MotionState
-from engine.physics.motion_models import cue_strike, rolling_motion, sliding_motion, spinning_motion, time_rolling_to_stop, time_sliding_to_rolling, time_spin_to_stop
+from engine.physics.motion_models import cue_strike, rolling_motion, sliding_motion, time_rolling_to_stop, time_sliding_to_rolling
 from engine.physics.simulation_state import SimulationState
-from engine.physics.tuneable_constants import G, SPIN_FRICTION
+from engine.physics.tuneable_constants import G
 
 import numpy as np
 import pytest
@@ -135,14 +135,14 @@ def test_sliding_velocity_at_rolling_time_equals_5_7_v0():
     cue = DEFAULT_CUE_BALL()
     v0 = np.linalg.norm(cue.vel)
     t = time_sliding_to_rolling(cue, G)
-    _, vel = sliding_motion(cue, t, G)
+    _, vel, _ = sliding_motion(cue, t, G)
     expected_speed = 5.0 / 7.0 * v0  # = 10/7 ≈ 1.429
     assert Decimal(str(np.linalg.norm(vel))).quantize(THREE_PLACES) == Decimal(str(expected_speed)).quantize(THREE_PLACES)
 
 
 def test_state_after_sliding():
     time_to_rolling = time_sliding_to_rolling(DEFAULT_CUE_BALL(), G)
-    pos, vel = sliding_motion(DEFAULT_CUE_BALL(), time_to_rolling, G)
+    pos, vel, _ = sliding_motion(DEFAULT_CUE_BALL(), time_to_rolling, G)
 
     assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.999")
     assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.700")
@@ -159,7 +159,7 @@ def test_sliding_motion_x_axis():
     # vel = 2.0 + (-1.962)(0.1) = 1.804
     # pos = 0 + 2.0(0.1) + 0.5(-1.962)(0.01) = 0.200 - 0.010 = 0.190
     cue = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
-    pos, vel = sliding_motion(cue, 0.1, G)
+    pos, vel, _ = sliding_motion(cue, 0.1, G)
     assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.190")
     assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.000")
     assert Decimal(str(vel[0])).quantize(THREE_PLACES) == Decimal("1.804")
@@ -171,7 +171,7 @@ def test_sliding_motion_angled():
     # vel = [1 - 0.139, 1 - 0.139] = [0.861, 0.861]
     # pos = [0.1 - 0.007, 0.1 - 0.007] = [0.093, 0.093]
     cue = BallState(pos=[0.0, 0.0], vel=[1.0, 1.0], omega=0.0, motion=MotionState.SLIDING)
-    pos, vel = sliding_motion(cue, 0.1, G)
+    pos, vel, _ = sliding_motion(cue, 0.1, G)
     assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.093")
     assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.093")
     assert Decimal(str(vel[0])).quantize(THREE_PLACES) == Decimal("0.861")
@@ -182,7 +182,7 @@ def test_sliding_motion_angled():
 
 def test_sliding_motion_zero_velocity_returns_unchanged():
     cue = BallState(pos=[1.0, 2.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
-    pos, vel = sliding_motion(cue, 0.5, G)
+    pos, vel, _ = sliding_motion(cue, 0.5, G)
     assert pos[0] == 1.0
     assert pos[1] == 2.0
     assert vel[0] == 0.0
@@ -190,7 +190,7 @@ def test_sliding_motion_zero_velocity_returns_unchanged():
 
 def test_sliding_motion_t_zero():
     cue = BallState(pos=[1.0, 2.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
-    pos, vel = sliding_motion(cue, 0.0, G)
+    pos, vel, _ = sliding_motion(cue, 0.0, G)
     assert pos[0] == 1.0
     assert pos[1] == 2.0
     assert vel[0] == 2.0
@@ -201,9 +201,9 @@ def test_sliding_motion_t_zero():
 
 def test_sliding_motion_decelerates_monotonically():
     cue = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
-    _, vel1 = sliding_motion(cue, 0.1, G)
+    _, vel1, _ = sliding_motion(cue, 0.1, G)
     cue2 = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
-    _, vel2 = sliding_motion(cue2, 0.2, G)
+    _, vel2, _ = sliding_motion(cue2, 0.2, G)
     assert np.linalg.norm(vel1) > np.linalg.norm(vel2)
 
 
@@ -211,7 +211,7 @@ def test_sliding_motion_decelerates_monotonically():
 def test_rolling_to_stop_time_standard():
     cue = DEFAULT_CUE_BALL()
     time_to_rolling = time_sliding_to_rolling(cue, G)
-    pos, vel = sliding_motion(cue, time_to_rolling, G)
+    pos, vel, _ = sliding_motion(cue, time_to_rolling, G)
 
     cue.pos = pos
     cue.vel = vel
@@ -223,7 +223,7 @@ def test_rolling_to_stop_time_standard():
 def test_rolling_to_stop_time_soft():
     cue = SOFT_CUE_BALL()
     time_to_rolling = time_sliding_to_rolling(cue, G)
-    pos, vel = sliding_motion(cue, time_to_rolling, G)
+    pos, vel, _ = sliding_motion(cue, time_to_rolling, G)
 
     cue.pos = pos
     cue.vel = vel
@@ -235,7 +235,7 @@ def test_rolling_to_stop_time_soft():
 def test_rolling_to_stop_time_hard():
     cue = HARD_CUE_BALL()
     time_to_rolling = time_sliding_to_rolling(cue, G)
-    pos, vel = sliding_motion(cue, time_to_rolling, G)
+    pos, vel, _ = sliding_motion(cue, time_to_rolling, G)
 
     cue.pos = pos
     cue.vel = vel
@@ -273,7 +273,7 @@ def test_rolling_velocity_is_zero_at_stop_time():
 def test_state_after_rolling_standard():
     cue = DEFAULT_CUE_BALL()
     time_to_rolling = time_sliding_to_rolling(cue, G)
-    pos, vel = sliding_motion(cue, time_to_rolling, G)
+    pos, vel, _ = sliding_motion(cue, time_to_rolling, G)
 
     cue.pos = pos
     cue.vel = vel
@@ -291,7 +291,7 @@ def test_state_after_rolling_standard():
 def test_state_after_rolling_angled():
     cue = ANGLED_CUE_BALL()
     time_to_rolling = time_sliding_to_rolling(cue, G)
-    pos, vel = sliding_motion(cue, time_to_rolling, G)
+    pos, vel, _ = sliding_motion(cue, time_to_rolling, G)
 
     assert Decimal(str(time_to_rolling)).quantize(THREE_PLACES) == Decimal("0.291")
     assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.853")
@@ -347,35 +347,59 @@ def test_rolling_motion_t_zero():
     assert vel[1] == 0.0
 
 
-def test_time_spin_to_stop_no_spin():
-    cue = DEFAULT_CUE_BALL()
-    cue.motion = MotionState.SPINNING
-    assert time_spin_to_stop(cue) == None
 
-def test_time_spin_to_stop_with_spin():
-    cue = DEFAULT_CUE_BALL()
-    cue.omega = 10.0  # set spin
-    cue.motion = MotionState.SPINNING
-    time_to_spin_stop = time_spin_to_stop(cue)
-    assert Decimal(str(time_to_spin_stop)).quantize(THREE_PLACES) == Decimal("1.250")
+# ── time_sliding_to_rolling: draw/topspin ──
 
-def test_state_after_spin_ended():
-    cue = DEFAULT_CUE_BALL()
-    cue.omega = 10.0  # set spin
-    cue.motion = MotionState.SPINNING
-    time_to_spin_stop = time_spin_to_stop(cue)
-    pos, omega = spinning_motion(cue, time_to_spin_stop, SPIN_FRICTION)
-    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.500")
-    assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.700")
-    assert Decimal(str(omega)).quantize(THREE_PLACES) == Decimal("0.000")
+def test_time_sliding_to_rolling_stun_shot():
+    # omega=0 (stun): same as original formula t = 2*v0/(7*mu*g)
+    # v0=2, mu=0.20, g=9.81 → t = 4/13.734 = 0.291
+    cue = cue_strike(position=[0.5, 0.7], direction=[1, 0], speed=2.0)
+    t = time_sliding_to_rolling(cue, G)
+    assert Decimal(str(t)).quantize(THREE_PLACES) == Decimal("0.291")
+
+def test_time_sliding_to_rolling_draw():
+    # Draw shot: omega=-20 (backspin), v0=2
+    # slip = |v0 - R*omega| = |2 - 0.028575*(-20)| = |2 + 0.5715| = 2.5715
+    # t = 2*2.5715 / (7*0.20*9.81) = 5.143/13.734 = 0.375
+    cue = BallState(pos=[0.5, 0.7], vel=[2.0, 0.0], omega=-20.0, motion=MotionState.SLIDING)
+    t = time_sliding_to_rolling(cue, G)
+    assert Decimal(str(t)).quantize(THREE_PLACES) == Decimal("0.374")
+
+def test_time_sliding_to_rolling_topspin():
+    # Topspin: omega=+100, v0=2, R*omega=2.8575
+    # slip = |2 - 2.8575| = 0.8575
+    # t = 2*0.8575 / 13.734 = 0.125
+    cue = BallState(pos=[0.5, 0.7], vel=[2.0, 0.0], omega=100.0, motion=MotionState.SLIDING)
+    t = time_sliding_to_rolling(cue, G)
+    assert Decimal(str(t)).quantize(THREE_PLACES) == Decimal("0.125")
+
+def test_sliding_to_rolling_self_consistency_v_equals_r_omega():
+    # At transition time, v should equal R*omega (rolling condition)
+    cue = BallState(pos=[0.5, 0.7], vel=[2.0, 0.0], omega=-20.0, motion=MotionState.SLIDING)
+    t = time_sliding_to_rolling(cue, G)
+    _, vel, omega = sliding_motion(cue, t, G)
+    speed = np.linalg.norm(vel)
+    assert Decimal(str(speed)).quantize(THREE_PLACES) == Decimal(str(cue.radius * omega)).quantize(THREE_PLACES)
 
 
-def test_state_after_spin_ended():
-    cue = DEFAULT_CUE_BALL()
-    cue.omega = 10.0  # set spin
-    cue.motion = MotionState.SPINNING
-    time_to_spin_stop = time_spin_to_stop(cue)
-    pos, omega = spinning_motion(cue, time_to_spin_stop/2, SPIN_FRICTION)
-    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.500")
-    assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.700")
-    assert Decimal(str(omega)).quantize(THREE_PLACES) == Decimal("0.067")
+# ── sliding_motion: draw/topspin ──
+
+def test_sliding_motion_backspin_omega_increases():
+    # Backspin: omega=0 (or negative), slip > 0, so omega should increase
+    cue = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    _, _, omega = sliding_motion(cue, 0.1, G)
+    assert omega > 0.0
+
+def test_sliding_motion_topspin_omega_decreases():
+    # Topspin: R*omega > v, slip < 0, so omega should decrease
+    cue = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=100.0, motion=MotionState.SLIDING)
+    _, _, omega = sliding_motion(cue, 0.1, G)
+    assert omega < 100.0
+
+def test_sliding_motion_topspin_self_consistency_v_equals_r_omega():
+    # Topspin case: at transition, v = R*omega
+    cue = BallState(pos=[0.5, 0.7], vel=[2.0, 0.0], omega=100.0, motion=MotionState.SLIDING)
+    t = time_sliding_to_rolling(cue, G)
+    _, vel, omega = sliding_motion(cue, t, G)
+    speed = np.linalg.norm(vel)
+    assert Decimal(str(speed)).quantize(THREE_PLACES) == Decimal(str(cue.radius * omega)).quantize(THREE_PLACES)

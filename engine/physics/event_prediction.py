@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from engine.physics.ball_state import MotionState
-from engine.physics.motion_models import ball_acceleration, time_rolling_to_stop, time_sliding_to_rolling, time_spin_to_stop, time_to_reach_point
+from engine.physics.motion_models import ball_acceleration, time_rolling_to_stop, time_sliding_to_rolling, time_to_reach_point
 from engine.physics.tuneable_constants import G
 
 
@@ -109,9 +109,6 @@ def predict_state_transition(ball):
 
     if ball.motion == MotionState.ROLLING:
         return time_rolling_to_stop(ball, G)
-
-    if ball.motion == MotionState.SPINNING:
-        return time_spin_to_stop(ball)
 
     return None
 
