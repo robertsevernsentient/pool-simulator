@@ -266,3 +266,38 @@ def test_ball_ball_collision_distance_equals_2r_at_collision():
 
     dist = np.linalg.norm(pos_a - pos_b)
     assert Decimal(str(dist)).quantize(THREE_PLACES) == Decimal(str(2 * BALL_RADIUS)).quantize(THREE_PLACES)
+
+
+# ── predict_ball_ball_collision: additional base cases ──
+
+def test_ball_ball_collision_head_on():
+    # Two balls moving toward each other along x-axis
+    # A at [0,0] vel=[3,0], B at [0.5,0] vel=[-3,0]
+    # Closing speed is much higher, should collide quickly
+    a = BallState(pos=[0.0, 0.0], vel=[3.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    b = BallState(pos=[0.5, 0.0], vel=[-3.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    t = predict_ball_ball_collision(a, b, G)
+    assert t is not None
+    # Gap = 0.5 - 2*0.028575 = 0.44285, closing speed ≈ 6 m/s
+    # Approximate: t ≈ 0.44285/6 ≈ 0.074 (friction makes it slightly more)
+    assert t < 0.1
+
+def test_ball_ball_collision_overtaking():
+    # Fast ball catches slow ball, both moving same direction
+    # A at [0,0] vel=[5,0], B at [0.2,0] vel=[1,0]
+    a = BallState(pos=[0.0, 0.0], vel=[5.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    b = BallState(pos=[0.2, 0.0], vel=[1.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    t = predict_ball_ball_collision(a, b, G)
+    assert t is not None
+    # Relative closing speed ≈ 4 m/s, gap ≈ 0.143m → t ≈ 0.036
+    assert t < 0.1
+
+
+# ── predict_ball_ball_collision: additional edge cases ──
+
+def test_ball_ball_collision_slow_ball_stops_before_reaching():
+    # Very slow ball far from stationary ball — decelerates to stop
+    a = BallState(pos=[0.0, 0.0], vel=[0.1, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    b = BallState(pos=[5.0, 0.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    t = predict_ball_ball_collision(a, b, G)
+    assert t is None
