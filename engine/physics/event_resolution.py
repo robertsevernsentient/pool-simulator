@@ -45,13 +45,13 @@ def resolve_event(state, event, table):
 
         # determine rail normal
         if ball.pos[0] <= ball.radius:
-            normal = np.array([1,0])
+            normal = np.array([1.0, 0.0])
         elif ball.pos[0] >= table.width - ball.radius:
-            normal = np.array([-1,0])
+            normal = np.array([-1.0, 0.0])
         elif ball.pos[1] <= ball.radius:
-            normal = np.array([0,1])
+            normal = np.array([0.0, 1.0])
         else:
-            normal = np.array([0,-1])
+            normal = np.array([0.0, -1.0])
 
         resolve_rail_collision(ball, normal, RAIL_RESTITUTION)
 

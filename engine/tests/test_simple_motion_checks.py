@@ -266,7 +266,7 @@ def test_time_rolling_to_stop_zero_velocity_raises():
 def test_rolling_velocity_is_zero_at_stop_time():
     cue = BallState(pos=[0.5, 0.7], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
     t = time_rolling_to_stop(cue, G)
-    _, vel = rolling_motion(cue, t, G)
+    _, vel, _ = rolling_motion(cue, t, G)
     assert Decimal(str(np.linalg.norm(vel))).quantize(THREE_PLACES) == Decimal("0.000")
 
 
@@ -280,7 +280,7 @@ def test_state_after_rolling_standard():
     cue.motion = MotionState.ROLLING
 
     time_to_stop = time_rolling_to_stop(cue, G)
-    pos, vel = rolling_motion(cue, time_to_stop, G)
+    pos, vel, _ = rolling_motion(cue, time_to_stop, G)
 
     assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("11.401")
     assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.700")
@@ -304,7 +304,7 @@ def test_state_after_rolling_angled():
     cue.motion = MotionState.ROLLING
 
     time_to_stop = time_rolling_to_stop(cue, G)
-    pos, vel = rolling_motion(cue, time_to_stop, G)
+    pos, vel, _ = rolling_motion(cue, time_to_stop, G)
 
     assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("8.208")
     assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("8.408")
@@ -321,7 +321,7 @@ def test_rolling_motion_x_axis():
     # vel = 2.0 - 0.0981*0.5 = 1.951
     # pos = 0 + 2.0*0.5 + 0.5*(-0.0981)*0.25 = 1.000 - 0.012 = 0.988
     cue = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
-    pos, vel = rolling_motion(cue, 0.5, G)
+    pos, vel, _ = rolling_motion(cue, 0.5, G)
     assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.988")
     assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.000")
     assert Decimal(str(vel[0])).quantize(THREE_PLACES) == Decimal("1.951")
@@ -332,7 +332,7 @@ def test_rolling_motion_x_axis():
 
 def test_rolling_motion_zero_velocity_returns_unchanged():
     cue = BallState(pos=[1.0, 2.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
-    pos, vel = rolling_motion(cue, 0.5, G)
+    pos, vel, _ = rolling_motion(cue, 0.5, G)
     assert pos[0] == 1.0
     assert pos[1] == 2.0
     assert vel[0] == 0.0
@@ -340,7 +340,7 @@ def test_rolling_motion_zero_velocity_returns_unchanged():
 
 def test_rolling_motion_t_zero():
     cue = BallState(pos=[1.0, 2.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
-    pos, vel = rolling_motion(cue, 0.0, G)
+    pos, vel, _ = rolling_motion(cue, 0.0, G)
     assert pos[0] == 1.0
     assert pos[1] == 2.0
     assert vel[0] == 2.0

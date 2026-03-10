@@ -28,12 +28,13 @@ def test_advance_state_single_rolling_ball():
     ball = BallState(pos=[1.0, 0.7], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
     state = SimulationState(balls=[ball], time=0.0)
     dt = 0.1
-    exp_pos, exp_vel = rolling_motion(
+    exp_pos, exp_vel, exp_omega = rolling_motion(
         BallState(pos=[1.0, 0.7], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING), dt, G
     )
     advance_state(state, dt)
     np.testing.assert_array_almost_equal(ball.pos, exp_pos)
     np.testing.assert_array_almost_equal(ball.vel, exp_vel)
+    assert abs(ball.omega - exp_omega) < 1e-9
 
 def test_advance_state_mixed_balls():
     sliding = BallState(pos=[0.5, 0.5], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
@@ -43,7 +44,7 @@ def test_advance_state_mixed_balls():
     exp_s_pos, exp_s_vel, exp_s_omega = sliding_motion(
         BallState(pos=[0.5, 0.5], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING), dt, G
     )
-    exp_r_pos, exp_r_vel = rolling_motion(
+    exp_r_pos, exp_r_vel, _ = rolling_motion(
         BallState(pos=[1.5, 0.5], vel=[1.0, 0.0], omega=0.0, motion=MotionState.ROLLING), dt, G
     )
     advance_state(state, dt)

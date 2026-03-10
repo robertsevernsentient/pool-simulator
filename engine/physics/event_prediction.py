@@ -122,7 +122,7 @@ def compute_next_event(state, table):
         for j in range(i+1, len(state.balls)):
             t = predict_ball_ball_collision(state.balls[i], state.balls[j], G)
 
-            if t and (earliest is None or t < earliest.time):
+            if t and (earliest is None or state.time + t < earliest.time):
                 earliest = Event(state.time + t, "BALL_COLLISION", i, j)
 
     # rail collisions
@@ -130,7 +130,7 @@ def compute_next_event(state, table):
 
         t = predict_rail_collision(ball, table)
 
-        if t and (earliest is None or t < earliest.time):
+        if t and (earliest is None or state.time + t < earliest.time):
             earliest = Event(state.time + t, "RAIL_COLLISION", i, None)
 
     # state transitions
@@ -138,7 +138,7 @@ def compute_next_event(state, table):
 
         t = predict_state_transition(ball)
 
-        if t and (earliest is None or t < earliest.time):
+        if t and (earliest is None or state.time + t < earliest.time):
             earliest = Event(state.time + t, "STATE_CHANGE", i, None)
 
     return earliest

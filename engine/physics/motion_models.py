@@ -2,6 +2,8 @@ import numpy as np
 from engine.physics.ball_state import BallState, MotionState
 from engine.physics.tuneable_constants import BALL_MASS
 
+POSITION_DP = 6
+
 def ball_acceleration(ball, g):
     if ball.motion == MotionState.STOPPED:
         return np.array([0.0, 0.0])
@@ -9,6 +11,12 @@ def ball_acceleration(ball, g):
     if speed == 0:
         return np.array([0.0, 0.0])
     direction = ball.vel / speed
+
+    if ball.motion == MotionState.ROLLING:
+        # Rolling friction always opposes motion (no slip by definition)
+        return -ball.mu() * g * direction
+
+    # Sliding: friction opposes slip direction
     slip = speed - ball.radius * ball.omega
     s = 1.0 if slip >= 0 else -1.0
     return -s * ball.mu() * g * direction
@@ -58,7 +66,7 @@ def sliding_motion(ball, t, g):
     a = -s * ball.mu() * g * direction
 
     new_vel = v0 + a * t
-    new_pos = ball.pos + v0 * t + 0.5 * a * t * t
+    new_pos = np.round(ball.pos + v0 * t + 0.5 * a * t * t, POSITION_DP)
 
     # Angular: friction reduces slip
     alpha = s * (5 * ball.mu() * g) / (2 * ball.radius)
@@ -73,15 +81,16 @@ def rolling_motion(ball, t, g):
     speed = np.linalg.norm(v)
 
     if speed == 0:
-        return ball.pos, ball.vel
+        return ball.pos, ball.vel, ball.omega
 
     direction = v / speed
     a = -ball.mu() * g * direction
 
-    pos = ball.pos + v*t + 0.5*a*t*t
+    pos = np.round(ball.pos + v*t + 0.5*a*t*t, POSITION_DP)
     vel = v + a*t
+    omega = np.linalg.norm(vel) / ball.radius
 
-    return pos, vel
+    return pos, vel, omega
 
 def time_to_reach_point(ball, target, g):
     """
