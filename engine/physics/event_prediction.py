@@ -47,15 +47,27 @@ def predict_ball_ball_collision(a, b, g):
         if t_trans is not None and t_trans < t_max:
             t_max = t_trans
 
+    # If balls are already at (or very near) collision distance and separating,
+    # skip — this is the residual contact from a just-resolved collision.
+    if abs(c0) < 1e-6 and c1 >= 0:
+        return None
+
     roots = np.roots(coeffs)
 
     # Filter: real, positive, beyond epsilon, within current motion regime
-    real_roots = [r.real for r in roots if abs(r.imag) < 1e-8 and r.real > 1e-6 and r.real <= t_max]
+    real_roots = [r.real for r in roots if abs(r.imag) < 1e-8 and r.real > 1e-4 and r.real <= t_max]
 
     if not real_roots:
         return None
 
-    return min(real_roots)
+    # Validate: substitute back and check distance ≈ 2r
+    for t in sorted(real_roots):
+        sep = dp + dv * t + half_da * t * t
+        dist = np.linalg.norm(sep)
+        if abs(dist - r) < 1e-4:
+            return t
+
+    return None
 
 def predict_rail_collision(ball, table):
     pos = _predict_rail_collision_position(ball, table)
