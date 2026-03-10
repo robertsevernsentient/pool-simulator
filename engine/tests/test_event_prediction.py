@@ -1,7 +1,8 @@
 from decimal import Decimal
 import numpy as np
 from engine.physics.ball_state import BallState, MotionState
-from engine.physics.event_prediction import _predict_rail_collision_position, predict_ball_ball_collision, predict_rail_collision, predict_state_transition
+from engine.physics.event_prediction import _predict_rail_collision_position, compute_next_event, predict_ball_ball_collision, predict_rail_collision, predict_state_transition
+from engine.physics.simulation_state import SimulationState
 from engine.physics.motion_models import cue_strike, sliding_motion
 from engine.physics.tuneable_constants import G, STANDARD_9_FOOT, BALL_RADIUS
 
@@ -301,3 +302,46 @@ def test_ball_ball_collision_slow_ball_stops_before_reaching():
     b = BallState(pos=[5.0, 0.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
     t = predict_ball_ball_collision(a, b, G)
     assert t is None
+
+
+# ── compute_next_event: base cases ──
+
+def test_compute_next_event_single_sliding_ball_state_change():
+    # Ball sliding at speed 2 toward right wall from center
+    # State change (slide→roll) at t=0.291 is before rail collision
+    ball = cue_strike(position=[1.42, 0.71], direction=[1, 0], speed=2.0)
+    state = SimulationState(balls=[ball], time=0.0)
+    event = compute_next_event(state, STANDARD_9_FOOT)
+    assert event is not None
+    assert event.event_type == "STATE_CHANGE"
+    assert event.a == 0
+
+def test_compute_next_event_single_rolling_ball_hits_rail():
+    # Ball rolling fast toward right wall, close to it
+    ball = BallState(pos=[2.5, 0.71], vel=[3.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
+    state = SimulationState(balls=[ball], time=0.0)
+    event = compute_next_event(state, STANDARD_9_FOOT)
+    assert event is not None
+    assert event.event_type == "RAIL_COLLISION"
+    assert event.a == 0
+
+def test_compute_next_event_ball_collision_first():
+    # Fast ball near stationary ball — collision happens before state change
+    a = BallState(pos=[0.5, 0.5], vel=[5.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    b = BallState(pos=[0.7, 0.5], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    state = SimulationState(balls=[a, b], time=0.0)
+    event = compute_next_event(state, STANDARD_9_FOOT)
+    assert event is not None
+    assert event.event_type == "BALL_COLLISION"
+    assert event.a == 0
+    assert event.b == 1
+
+
+# ── compute_next_event: edge cases ──
+
+def test_compute_next_event_all_stopped():
+    a = BallState(pos=[0.5, 0.5], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    b = BallState(pos=[1.0, 0.5], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    state = SimulationState(balls=[a, b], time=0.0)
+    event = compute_next_event(state, STANDARD_9_FOOT)
+    assert event is None

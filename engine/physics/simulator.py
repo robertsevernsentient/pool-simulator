@@ -32,4 +32,4 @@ def simulate(state, table):
 
         advance_state(state, dt)
 
-        resolve_event(state, event)
+        resolve_event(state, event, table)
