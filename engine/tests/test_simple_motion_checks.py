@@ -1,6 +1,6 @@
 from decimal import Decimal
 from engine.physics.ball_state import BallState, MotionState
-from engine.physics.motion_models import ball_acceleration, cue_strike, rolling_motion, sliding_motion, time_rolling_to_stop, time_sliding_to_rolling
+from engine.physics.motion_models import ball_acceleration, cue_strike, rolling_motion, sliding_motion, time_rolling_to_stop, time_sliding_to_rolling, time_to_reach_point
 from engine.physics.simulation_state import SimulationState
 from engine.physics.tuneable_constants import G
 
@@ -443,4 +443,64 @@ def test_ball_acceleration_zero_velocity_sliding():
     a = ball_acceleration(ball, G)
     assert a[0] == 0.0
     assert a[1] == 0.0
+
+
+# ── time_to_reach_point: base cases ──
+
+def test_time_to_reach_point_sliding():
+    # pos=[0,0], vel=[2,0], target=[0.19,0], SLIDING
+    # 0.5*mu*g*t² - v*t + d = 0 → 0.5*0.20*9.81*t² - 2t + 0.19 = 0
+    # 0.981t² - 2t + 0.19 = 0 → t = (2 - √(4 - 4*0.981*0.19)) / (2*0.981)
+    # discriminant = 4 - 0.7456 = 3.2544, √ = 1.8040
+    # t = (2 - 1.8040) / 1.962 = 0.196/1.962 = 0.0999 ≈ 0.100
+    ball = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    t = time_to_reach_point(ball, [0.19, 0.0], G)
+    assert t is not None
+    assert Decimal(str(t)).quantize(THREE_PLACES) == Decimal("0.100")
+
+def test_time_to_reach_point_rolling():
+    # pos=[0,0], vel=[2,0], target=[0.988,0], ROLLING
+    # 0.5*0.01*9.81*t² - 2t + 0.988 = 0 → 0.04905t² - 2t + 0.988 = 0
+    # discriminant = 4 - 4*0.04905*0.988 = 4 - 0.19384 = 3.80616, √ = 1.95094
+    # t = (2 - 1.95094) / (2*0.04905) = 0.04906/0.0981 = 0.500
+    ball = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
+    t = time_to_reach_point(ball, [0.988, 0.0], G)
+    assert t is not None
+    assert Decimal(str(t)).quantize(THREE_PLACES) == Decimal("0.500")
+
+
+# ── time_to_reach_point: edge cases ──
+
+def test_time_to_reach_point_stopped():
+    ball = BallState(pos=[0.0, 0.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    t = time_to_reach_point(ball, [1.0, 0.0], G)
+    assert t is None
+
+def test_time_to_reach_point_already_at_target():
+    ball = BallState(pos=[1.0, 1.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    t = time_to_reach_point(ball, [1.0, 1.0], G)
+    assert t == 0.0
+
+def test_time_to_reach_point_moving_away():
+    ball = BallState(pos=[0.0, 0.0], vel=[-2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    t = time_to_reach_point(ball, [1.0, 0.0], G)
+    assert t is None
+
+def test_time_to_reach_point_stops_before_target():
+    # Very slow ball, far target — ball will stop before reaching it
+    ball = BallState(pos=[0.0, 0.0], vel=[0.1, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    t = time_to_reach_point(ball, [100.0, 0.0], G)
+    assert t is None
+
+
+# ── time_to_reach_point: self-consistency ──
+
+def test_time_to_reach_point_position_at_time_equals_target():
+    ball = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    target = [0.19, 0.0]
+    t = time_to_reach_point(ball, target, G)
+    assert t is not None
+    pos, _, _ = sliding_motion(ball, t, G)
+    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal(str(target[0])).quantize(THREE_PLACES)
+    assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal(str(target[1])).quantize(THREE_PLACES)
 
