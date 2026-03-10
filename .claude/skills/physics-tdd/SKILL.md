@@ -45,11 +45,12 @@ Write tests covering three categories:
    - Events that should never happen (e.g. time-to-stop for an already-stopped ball should return `None`)
    - Negative or extreme values where applicable
 
-3. **Self-consistency checks** — Use the function's own outputs to verify invariants.
+3. **Self-consistency checks** — Use the function's own outputs to verify **independent physical invariants**.
    - If you compute `time_to_stop`, then evaluate the motion at that time — velocity must be zero.
    - If you compute `time_to_event`, then evaluate state at that time — the event condition must hold.
    - Conservation laws where applicable (energy, momentum).
    - Symmetry: mirrored inputs should give mirrored outputs.
+   - **Not every function has a meaningful self-consistency check.** Do not write one that merely re-derives the same formula used in the implementation — that tests nothing. It is acceptable to have only base and edge cases for a function. Only add self-consistency checks when they test a genuinely independent invariant.
 
 For numerical assertions, use `Decimal` with explicit precision (`THREE_PLACES = Decimal('0.000')`) to make expected values readable and verifiable.
 

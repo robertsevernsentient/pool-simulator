@@ -1,6 +1,6 @@
 from decimal import Decimal
 from engine.physics.ball_state import BallState, MotionState
-from engine.physics.motion_models import cue_strike, rolling_motion, sliding_motion, time_rolling_to_stop, time_sliding_to_rolling
+from engine.physics.motion_models import ball_acceleration, cue_strike, rolling_motion, sliding_motion, time_rolling_to_stop, time_sliding_to_rolling
 from engine.physics.simulation_state import SimulationState
 from engine.physics.tuneable_constants import G
 
@@ -403,3 +403,44 @@ def test_sliding_motion_topspin_self_consistency_v_equals_r_omega():
     _, vel, omega = sliding_motion(cue, t, G)
     speed = np.linalg.norm(vel)
     assert Decimal(str(speed)).quantize(THREE_PLACES) == Decimal(str(cue.radius * omega)).quantize(THREE_PLACES)
+
+
+# ── ball_acceleration: base cases ──
+
+def test_ball_acceleration_sliding_stun():
+    # vel=[2,0], omega=0, SLIDING: a = -mu_slide * g * v_hat = -0.20*9.81*[1,0] = [-1.962, 0]
+    ball = BallState(pos=[0, 0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    a = ball_acceleration(ball, G)
+    assert Decimal(str(a[0])).quantize(THREE_PLACES) == Decimal("-1.962")
+    assert Decimal(str(a[1])).quantize(THREE_PLACES) == Decimal("0.000")
+
+def test_ball_acceleration_sliding_topspin():
+    # vel=[2,0], omega=100, SLIDING: Rω=2.8575 > v=2, slip<0, friction accelerates
+    # a = +mu_slide * g * v_hat = +0.20*9.81*[1,0] = [+1.962, 0]
+    ball = BallState(pos=[0, 0], vel=[2.0, 0.0], omega=100.0, motion=MotionState.SLIDING)
+    a = ball_acceleration(ball, G)
+    assert Decimal(str(a[0])).quantize(THREE_PLACES) == Decimal("1.962")
+    assert Decimal(str(a[1])).quantize(THREE_PLACES) == Decimal("0.000")
+
+def test_ball_acceleration_rolling():
+    # vel=[2,0], ROLLING: a = -mu_roll * g * v_hat = -0.01*9.81*[1,0] = [-0.0981, 0]
+    ball = BallState(pos=[0, 0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
+    a = ball_acceleration(ball, G)
+    assert Decimal(str(a[0])).quantize(THREE_PLACES) == Decimal("-0.098")
+    assert Decimal(str(a[1])).quantize(THREE_PLACES) == Decimal("0.000")
+
+
+# ── ball_acceleration: edge cases ──
+
+def test_ball_acceleration_stopped():
+    ball = BallState(pos=[0, 0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
+    a = ball_acceleration(ball, G)
+    assert a[0] == 0.0
+    assert a[1] == 0.0
+
+def test_ball_acceleration_zero_velocity_sliding():
+    ball = BallState(pos=[0, 0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
+    a = ball_acceleration(ball, G)
+    assert a[0] == 0.0
+    assert a[1] == 0.0
+
