@@ -218,7 +218,7 @@ def test_rolling_to_stop_time_standard():
     cue.motion = MotionState.ROLLING
 
     time_to_stop = time_rolling_to_stop(cue, G)
-    assert Decimal(str(time_to_stop)).quantize(THREE_PLACES) == Decimal("14.562")
+    assert Decimal(str(time_to_stop)).quantize(THREE_PLACES) == Decimal("4.854")
 
 def test_rolling_to_stop_time_soft():
     cue = SOFT_CUE_BALL()
@@ -230,7 +230,7 @@ def test_rolling_to_stop_time_soft():
     cue.motion = MotionState.ROLLING
 
     time_to_stop = time_rolling_to_stop(cue, G)
-    assert Decimal(str(time_to_stop)).quantize(THREE_PLACES) == Decimal("7.281")
+    assert Decimal(str(time_to_stop)).quantize(THREE_PLACES) == Decimal("2.427")
 
 def test_rolling_to_stop_time_hard():
     cue = HARD_CUE_BALL()
@@ -242,15 +242,15 @@ def test_rolling_to_stop_time_hard():
     cue.motion = MotionState.ROLLING
 
     time_to_stop = time_rolling_to_stop(cue, G)
-    assert Decimal(str(time_to_stop)).quantize(THREE_PLACES) == Decimal("21.844")
+    assert Decimal(str(time_to_stop)).quantize(THREE_PLACES) == Decimal("7.281")
 
 # ── time_rolling_to_stop: isolated base case ──
 
 def test_rolling_to_stop_time_isolated():
-    # v0=2.0, mu_roll=0.01, g=9.81 → t = 2.0/(0.01*9.81) = 20.387
+    # v0=2.0, mu_roll=0.03, g=9.81 → t = 2.0/(0.03*9.81) = 6.796
     cue = BallState(pos=[0.5, 0.7], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
     t = time_rolling_to_stop(cue, G)
-    assert Decimal(str(t)).quantize(THREE_PLACES) == Decimal("20.387")
+    assert Decimal(str(t)).quantize(THREE_PLACES) == Decimal("6.796")
 
 
 # ── time_rolling_to_stop: edge cases ──
@@ -282,7 +282,7 @@ def test_state_after_rolling_standard():
     time_to_stop = time_rolling_to_stop(cue, G)
     pos, vel, _ = rolling_motion(cue, time_to_stop, G)
 
-    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("11.401")
+    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("4.467")
     assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.700")
 
     assert vel[0] == 0.0
@@ -306,25 +306,25 @@ def test_state_after_rolling_angled():
     time_to_stop = time_rolling_to_stop(cue, G)
     pos, vel, _ = rolling_motion(cue, time_to_stop, G)
 
-    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("8.208")
-    assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("8.408")
+    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("3.305")
+    assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("3.505")
 
-    assert vel[0] == 0.0
-    assert vel[1] == 0.0
+    assert abs(vel[0]) < 1e-10
+    assert abs(vel[1]) < 1e-10
 
 
 # ── rolling_motion: base cases ──
 
 def test_rolling_motion_x_axis():
     # ball at [0,0], vel=[2,0], t=0.5
-    # a = -mu_roll * g = -0.01 * 9.81 = -0.0981
-    # vel = 2.0 - 0.0981*0.5 = 1.951
-    # pos = 0 + 2.0*0.5 + 0.5*(-0.0981)*0.25 = 1.000 - 0.012 = 0.988
+    # a = -mu_roll * g = -0.03 * 9.81 = -0.2943
+    # vel = 2.0 - 0.2943*0.5 = 1.853
+    # pos = 0 + 2.0*0.5 + 0.5*(-0.2943)*0.25 = 1.000 - 0.037 = 0.963
     cue = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
     pos, vel, _ = rolling_motion(cue, 0.5, G)
-    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.988")
+    assert Decimal(str(pos[0])).quantize(THREE_PLACES) == Decimal("0.963")
     assert Decimal(str(pos[1])).quantize(THREE_PLACES) == Decimal("0.000")
-    assert Decimal(str(vel[0])).quantize(THREE_PLACES) == Decimal("1.951")
+    assert Decimal(str(vel[0])).quantize(THREE_PLACES) == Decimal("1.853")
     assert Decimal(str(vel[1])).quantize(THREE_PLACES) == Decimal("0.000")
 
 
@@ -423,10 +423,10 @@ def test_ball_acceleration_sliding_topspin():
     assert Decimal(str(a[1])).quantize(THREE_PLACES) == Decimal("0.000")
 
 def test_ball_acceleration_rolling():
-    # vel=[2,0], ROLLING: a = -mu_roll * g * v_hat = -0.01*9.81*[1,0] = [-0.0981, 0]
+    # vel=[2,0], ROLLING: a = -mu_roll * g * v_hat = -0.03*9.81*[1,0] = [-0.294, 0]
     ball = BallState(pos=[0, 0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
     a = ball_acceleration(ball, G)
-    assert Decimal(str(a[0])).quantize(THREE_PLACES) == Decimal("-0.098")
+    assert Decimal(str(a[0])).quantize(THREE_PLACES) == Decimal("-0.294")
     assert Decimal(str(a[1])).quantize(THREE_PLACES) == Decimal("0.000")
 
 
@@ -460,13 +460,13 @@ def test_time_to_reach_point_sliding():
 
 def test_time_to_reach_point_rolling():
     # pos=[0,0], vel=[2,0], target=[0.988,0], ROLLING
-    # 0.5*0.01*9.81*t² - 2t + 0.988 = 0 → 0.04905t² - 2t + 0.988 = 0
-    # discriminant = 4 - 4*0.04905*0.988 = 4 - 0.19384 = 3.80616, √ = 1.95094
-    # t = (2 - 1.95094) / (2*0.04905) = 0.04906/0.0981 = 0.500
+    # 0.5*0.03*9.81*t² - 2t + 0.988 = 0 → 0.14715t² - 2t + 0.988 = 0
+    # discriminant = 4 - 4*0.14715*0.988 = 4 - 0.5815 = 3.4185, √ = 1.8491
+    # t = (2 - 1.8491) / (2*0.14715) = 0.1509/0.2943 = 0.513
     ball = BallState(pos=[0.0, 0.0], vel=[2.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
     t = time_to_reach_point(ball, [0.988, 0.0], G)
     assert t is not None
-    assert Decimal(str(t)).quantize(THREE_PLACES) == Decimal("0.500")
+    assert Decimal(str(t)).quantize(THREE_PLACES) == Decimal("0.513")
 
 
 # ── time_to_reach_point: edge cases ──

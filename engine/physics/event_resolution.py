@@ -18,8 +18,20 @@ def resolve_ball_collision(a, b):
     a.vel += impulse * b.mass * n
     b.vel -= impulse * a.mass * n
 
-    a.motion = MotionState.SLIDING
-    b.motion = MotionState.SLIDING
+    # For each ball: if velocity is ~0 but spin remains, seed a tiny velocity
+    # in the direction the spin would push it (inferred from collision geometry).
+    # Ball A was moving in -n direction; ball B was receiving impulse in +n.
+    for ball, spin_dir in [(a, -n), (b, n)]:
+        speed = np.linalg.norm(ball.vel)
+        if speed < 1e-9 and abs(ball.omega) < 1e-9:
+            ball.vel[:] = 0
+            ball.motion = MotionState.STOPPED
+        elif speed < 1e-9 and abs(ball.omega) > 1e-9:
+            # Seed tiny velocity so sliding_motion knows which direction to push
+            ball.vel = spin_dir * 1e-6
+            ball.motion = MotionState.SLIDING
+        else:
+            ball.motion = MotionState.SLIDING
 
 def resolve_rail_collision(ball, normal, restitution):
 

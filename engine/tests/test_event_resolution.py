@@ -81,11 +81,12 @@ def test_resolve_ball_collision_separating_no_change():
     assert np.array_equal(a.vel, vel_a_before)
     assert np.array_equal(b.vel, vel_b_before)
 
-def test_resolve_ball_collision_sets_both_sliding():
+def test_resolve_ball_collision_sets_motion_states():
     a = BallState(pos=[0.0, 0.0], vel=[3.0, 0.0], omega=0.0, motion=MotionState.ROLLING)
     b = BallState(pos=[0.05715, 0.0], vel=[0.0, 0.0], omega=0.0, motion=MotionState.STOPPED)
     resolve_ball_collision(a, b)
-    assert a.motion == MotionState.SLIDING
+    # Head-on, equal mass, no spin: A stops dead, B gets all velocity
+    assert a.motion == MotionState.STOPPED
     assert b.motion == MotionState.SLIDING
 
 
@@ -104,24 +105,24 @@ def test_resolve_ball_collision_momentum_conserved():
 # ── resolve_rail_collision: base cases ──
 
 def test_resolve_rail_collision_perpendicular():
-    # Ball hitting right wall: vel=[3,0], normal=[-1,0], e=0.9
+    # Ball hitting right wall: vel=[3,0], normal=[-1,0], e=0.82
     # v_n = dot([3,0],[-1,0])*[-1,0] = -3*[-1,0] = [3,0]
     # v_t = [3,0] - [3,0] = [0,0]
     # new_vel = [0,0] - 0.9*[3,0] = [-2.7, 0]
     ball = BallState(pos=[2.81, 0.7], vel=[3.0, 0.0], omega=0.0, motion=MotionState.SLIDING)
     resolve_rail_collision(ball, np.array([-1, 0], dtype=float), RAIL_RESTITUTION)
-    assert Decimal(str(ball.vel[0])).quantize(THREE_PLACES) == Decimal("-2.700")
+    assert Decimal(str(ball.vel[0])).quantize(THREE_PLACES) == Decimal("-2.460")
     assert Decimal(str(ball.vel[1])).quantize(THREE_PLACES) == Decimal("0.000")
 
 def test_resolve_rail_collision_angled():
-    # Ball hitting top wall: vel=[2,2], normal=[0,-1], e=0.9
+    # Ball hitting top wall: vel=[2,2], normal=[0,-1], e=0.82
     # v_n = dot([2,2],[0,-1])*[0,-1] = -2*[0,-1] = [0,2]
     # v_t = [2,2] - [0,2] = [2,0]
     # new_vel = [2,0] - 0.9*[0,2] = [2, -1.8]
     ball = BallState(pos=[0.5, 1.39], vel=[2.0, 2.0], omega=0.0, motion=MotionState.SLIDING)
     resolve_rail_collision(ball, np.array([0, -1], dtype=float), RAIL_RESTITUTION)
     assert Decimal(str(ball.vel[0])).quantize(THREE_PLACES) == Decimal("2.000")
-    assert Decimal(str(ball.vel[1])).quantize(THREE_PLACES) == Decimal("-1.800")
+    assert Decimal(str(ball.vel[1])).quantize(THREE_PLACES) == Decimal("-1.640")
 
 
 # ── resolve_rail_collision: edge cases ──
@@ -157,7 +158,7 @@ def test_resolve_event_rail_collision_right_wall():
     event = Event(time=0.1, event_type="RAIL_COLLISION", a=0, b=None)
     resolve_event(state, event, STANDARD_9_FOOT)
     # Normal is [-1,0], so vel reverses x with restitution
-    assert Decimal(str(ball.vel[0])).quantize(THREE_PLACES) == Decimal("-2.700")
+    assert Decimal(str(ball.vel[0])).quantize(THREE_PLACES) == Decimal("-2.460")
     assert Decimal(str(ball.vel[1])).quantize(THREE_PLACES) == Decimal("0.000")
     assert ball.motion == MotionState.SLIDING
 
@@ -180,7 +181,7 @@ def test_resolve_event_rail_collision_left_wall():
     event = Event(time=0.1, event_type="RAIL_COLLISION", a=0, b=None)
     resolve_event(state, event, STANDARD_9_FOOT)
     # Normal is [1,0]
-    assert Decimal(str(ball.vel[0])).quantize(THREE_PLACES) == Decimal("2.700")
+    assert Decimal(str(ball.vel[0])).quantize(THREE_PLACES) == Decimal("2.460")
     assert Decimal(str(ball.vel[1])).quantize(THREE_PLACES) == Decimal("0.000")
 
 def test_resolve_event_rail_collision_bottom_wall():
@@ -190,4 +191,4 @@ def test_resolve_event_rail_collision_bottom_wall():
     resolve_event(state, event, STANDARD_9_FOOT)
     # Normal is [0,1]
     assert Decimal(str(ball.vel[0])).quantize(THREE_PLACES) == Decimal("0.000")
-    assert Decimal(str(ball.vel[1])).quantize(THREE_PLACES) == Decimal("2.700")
+    assert Decimal(str(ball.vel[1])).quantize(THREE_PLACES) == Decimal("2.460")

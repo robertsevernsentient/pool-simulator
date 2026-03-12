@@ -1,6 +1,6 @@
 import numpy as np
 from engine.physics.ball_state import BallState, MotionState
-from engine.physics.tuneable_constants import BALL_MASS
+from engine.physics.tuneable_constants import BALL_MASS, MAX_CUE_SPIN
 
 POSITION_DP = 6
 
@@ -22,7 +22,7 @@ def ball_acceleration(ball, g):
     return -s * ball.mu() * g * direction
 
 
-def cue_strike(position, direction, speed):
+def cue_strike(position, direction, speed, spin=0.0):
 
     direction = np.array(direction, dtype=float)
 
@@ -37,13 +37,17 @@ def cue_strike(position, direction, speed):
     if np.linalg.norm(direction) == 0:
         raise ValueError("direction must be non-zero when speed is non-zero")
 
+    if not -1.0 <= spin <= 1.0:
+        raise ValueError("spin must be between -1 (max draw) and 1 (max follow)")
+
     direction = direction / np.linalg.norm(direction)
     vel = direction * speed
+    omega = spin * MAX_CUE_SPIN * speed
 
     return BallState(
         pos=np.array(position, dtype=float),
         vel=vel,
-        omega=0.0,
+        omega=omega,
         motion=MotionState.SLIDING
     )
 

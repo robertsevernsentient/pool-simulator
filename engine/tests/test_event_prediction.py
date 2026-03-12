@@ -148,7 +148,7 @@ def test_predict_rail_collision_top_start_rolling():
     cue.motion = MotionState.ROLLING
 
     times = predict_rail_collision(cue, STANDARD_9_FOOT)
-    assert Decimal(times).quantize(THREE_PLACES) == Decimal(str("0.231"))
+    assert Decimal(times).quantize(THREE_PLACES) == Decimal(str("0.233"))
 
 def test_predict_rail_collision_top_rolling_slower():
     # This one doesn't starts sliding -- at the pace that previously didn't get to rail before rolling when it starts sliding
@@ -161,7 +161,7 @@ def test_predict_rail_collision_top_rolling_slower():
     cue.motion = MotionState.ROLLING
 
     times = predict_rail_collision(cue, STANDARD_9_FOOT)
-    assert Decimal(times).quantize(THREE_PLACES) == Decimal(str("0.349"))
+    assert Decimal(times).quantize(THREE_PLACES) == Decimal(str("0.355"))
 
 def test_predict_rail_collision_at_angle():
     # 45 degree angle to bottom left
@@ -174,7 +174,7 @@ def test_predict_rail_collision_at_angle():
     cue.motion = MotionState.ROLLING
 
     times = predict_rail_collision(cue, STANDARD_9_FOOT)
-    assert Decimal(times).quantize(THREE_PLACES) == Decimal(str("0.336"))
+    assert Decimal(times).quantize(THREE_PLACES) == Decimal(str("0.342"))
 
 
 # Test state change detection
@@ -197,7 +197,7 @@ def test_state_change_slide_to_roll_detection():
     cue.motion = MotionState.ROLLING
     slide_to_roll_time = predict_state_transition(cue)
 
-    assert Decimal(slide_to_roll_time).quantize(THREE_PLACES) == Decimal(str("20.387"))
+    assert Decimal(slide_to_roll_time).quantize(THREE_PLACES) == Decimal(str("6.796"))
 
 def test_state_change_when_stopped_detection():
     cue = BallState(
