@@ -7,7 +7,7 @@ from engine.physics.tuneable_constants import BALL_MASS, BALL_RADIUS, MU_ROLL, M
 class MotionState(Enum):
     SLIDING = 1
     ROLLING = 2
-    STOPPED = 4
+    STOPPED = 3
 
 
 class BallState:
